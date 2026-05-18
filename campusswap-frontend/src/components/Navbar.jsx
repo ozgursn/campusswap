@@ -1,28 +1,32 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="navbar-header">
       <div className="navbar-container">
-        {/* Logo Kısmı */}
-        <div className="logo">
+        
+        {/* Logo Kısmı - Tıklayınca Ana Sayfaya Gider */}
+        <div className="logo" onClick={() => navigate('/')}>
           <span className="logo-icon">♻️</span>
           <h1>Campus<span>Swap</span></h1>
         </div>
 
-        {/* Arama Çubuğu */}
         <div className="search-bar">
-          <input 
-            type="text" 
-            placeholder="Kampüste ne arıyorsun? (Örn: Fizik 101 Kitabı)" 
-          />
+          <input type="text" placeholder="Kampüste ne arıyorsun?" />
           <button className="search-btn">Ara</button>
         </div>
 
-        {/* Menü Butonları */}
         <nav className="nav-links">
-          <button className="btn-login">Giriş Yap</button>
-          <button className="btn-post">➕ İlan Ver</button>
+          <button className="btn-login" onClick={() => navigate('/login')}>
+            Giriş Yap
+          </button>
+          {/* İlan Ver butonuna yönlendirme eklendi */}
+          <button className="btn-post" onClick={() => navigate('/create-ad')}>
+            ➕ İlan Ver
+          </button>
         </nav>
       </div>
     </header>
