@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Hero from '../components/Hero';
 import ProductCard from '../components/ProductCard';
 
 const Home = () => {
-  // Sahte İlan Verileri
-  const products = [
-    { id: 1, title: "Fizik 101 Ders Kitabı", price: 150, campus: "Merkez Kampüs", category: "Kitap" },
-    { id: 2, title: "Laboratuvar Önlüğü (L Beden)", price: 200, campus: "Tıp Fakültesi", category: "Eşya" },
-    { id: 3, title: "Çizim Masası - Mimar Sinan", price: 850, campus: "Mimarlık Fak.", category: "Mobilya" },
-    { id: 4, title: "Hesap Makinesi (Casio)", price: 400, campus: "Mühendislik Fak.", category: "Elektronik" },
-  ];
+  // Veritabanından gelecek ürünleri tutacağımız state
+  const [products, setProducts] = useState([]);
+
+  // Sayfa yüklendiğinde bir kere çalışacak kod (useEffect)
+  useEffect(() => {
+    // Backend API'mizden verileri çekiyoruz
+    fetch('http://localhost:3000/products')
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data); // Gelen veriyi state'e yazdır
+      })
+      .catch((err) => console.error("Veri çekme hatası:", err));
+  }, []);
 
   return (
     <main className="main-content">
@@ -19,10 +25,25 @@ const Home = () => {
           <h2>Son Eklenen İlanlar</h2>
           <button className="btn-all">Tümünü Gör</button>
         </div>
+        
         <div className="product-grid">
-          {products.map((item) => (
-            <ProductCard key={item.id} {...item} />
-          ))}
+          {/* Eğer ürün yoksa kullanıcıya mesaj göster, varsa kartları çiz */}
+          {products.length === 0 ? (
+            <p style={{ color: 'gray', gridColumn: '1 / -1', textAlign: 'center' }}>
+              Henüz ilan eklenmemiş. İlk ilanı sen ver!
+            </p>
+          ) : (
+            products.map((item) => (
+              <ProductCard 
+                key={item.id} 
+                title={item.title}
+                price={item.price}
+                campus={item.campus}
+                category={item.category}
+                image={item.imageUrl} // Resim adresi gelirse gösterecek
+              />
+            ))
+          )}
         </div>
       </section>
     </main>

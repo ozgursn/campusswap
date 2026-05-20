@@ -1,6 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CreateAd = () => {
+  const navigate = useNavigate();
+  
+  // Formdaki verileri tutacağımız state (Hafıza)
+  const [formData, setFormData] = useState({
+    title: '',
+    category: 'Kitap & Not',
+    price: '',
+    campus: 'Merkez Kampüs'
+  });
+
+  // Girdiler değiştikçe hafızayı güncelleyen fonksiyon
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Form gönderildiğinde API'ye istek atan fonksiyon
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Sayfanın yenilenmesini engeller
+
+    try {
+      const response = await fetch('http://localhost:3000/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          price: Number(formData.price) // Fiyatı sayıya çevirerek gönderiyoruz
+        })
+      });
+
+      if (response.ok) {
+        // İlan başarıyla eklendiyse ana sayfaya yönlendir
+        navigate('/');
+      }
+    } catch (error) {
+      console.error("İlan eklenirken hata oluştu:", error);
+    }
+  };
+
   return (
     <main className="main-content" style={{ display: 'flex', justifyContent: 'center', padding: '3rem 1.5rem' }}>
       <div style={{ background: 'white', padding: '2.5rem', borderRadius: '1rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', width: '100%', maxWidth: '600px', border: '1px solid var(--border-color)', textAlign: 'left' }}>
@@ -10,23 +49,22 @@ const CreateAd = () => {
           Kampüsteki diğer öğrencilerin işine yarayacak eşyalarını hemen listele.
         </p>
         
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           
-          {/* İlan Başlığı */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>İlan Başlığı</label>
             <input 
-              type="text" 
+              type="text" name="title" required
+              value={formData.title} onChange={handleChange}
               placeholder="Örn: Temiz Kullanılmış Fizik 101 Kitabı" 
               style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none' }}
             />
           </div>
 
-          {/* Kategori ve Fiyat (Yan Yana) */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Kategori</label>
-              <select style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
+              <select name="category" value={formData.category} onChange={handleChange} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
                 <option>Kitap & Not</option>
                 <option>Elektronik</option>
                 <option>Ev & Yurt Eşyası</option>
@@ -36,33 +74,24 @@ const CreateAd = () => {
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Fiyat (TL)</label>
               <input 
-                type="number" 
+                type="number" name="price" required min="0"
+                value={formData.price} onChange={handleChange}
                 placeholder="0.00" 
                 style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none' }}
               />
             </div>
           </div>
 
-          {/* Kampüs Seçimi */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Teslimat Kampüsü</label>
-            <select style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
+            <select name="campus" value={formData.campus} onChange={handleChange} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
               <option>Merkez Kampüs</option>
               <option>Kuzey Kampüs</option>
               <option>Tıp Fakültesi Kampüsü</option>
             </select>
           </div>
 
-          {/* Fotoğraf Yükleme (Şimdilik Görsel Temsili) */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Ürün Fotoğrafı</label>
-            <div style={{ border: '2px dashed #cbd5e1', padding: '2rem', textAlign: 'center', borderRadius: '0.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-              📸 Fotoğraf Seç veya Sürükle Bırak
-            </div>
-          </div>
-
-          {/* Gönder Butonu */}
-          <button type="button" className="btn-post" style={{ marginTop: '1rem', padding: '1rem', fontSize: '1rem' }}>
+          <button type="submit" className="btn-post" style={{ marginTop: '1rem', padding: '1rem', fontSize: '1rem' }}>
             İlanı Yayına Al
           </button>
 
