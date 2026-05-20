@@ -25,4 +25,8 @@ export class ProductsService {
       order: { createdAt: 'DESC' }, // En son eklenen ilanlar en üstte gelsin
     });
   }
+  // 3. Tekil İlan Getirme Fonksiyonu
+  findOne(id: number) {
+    return this.productsRepository.findOneBy({ id });
+  }
 }

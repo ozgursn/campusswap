@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import CreateAd from './pages/CreateAd'; // 1. Yeni sayfayı import ettik
 import './App.css';
+import ProductDetail from './pages/ProductDetail';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/create-ad" element={<CreateAd />} /> {/* 2. Yeni rotayı ekledik */}
+          <Route path="/product/:id" element={<ProductDetail />} />
         </Routes>
 
         <Footer />

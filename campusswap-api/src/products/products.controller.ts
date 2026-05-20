@@ -1,20 +1,25 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common'; // ParseIntPipe eklendi
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
-@Controller('products') // Bu, adresin "http://localhost:3000/products" olacağını belirtir
+@Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // İlan Gönderme (POST İsteki)
   @Post()
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
 
-  // İlanları Listeleme (GET İsteki)
   @Get()
   findAll() {
     return this.productsService.findAll();
+  }
+
+  // Güvenlik Kalkanı: ParseIntPipe, gelen "id" string değilse veya harf içeriyorsa
+  // veritabanını hiç yormadan doğrudan "400 Bad Request" hatası döndürür.
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) { 
+    return this.productsService.findOne(id); 
   }
 }

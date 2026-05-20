@@ -1,8 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const ProductCard = ({ image, title, price, campus, category }) => {
+const ProductCard = ({ id, image, title, price, campus, category }) => { // id eklendi
+  const navigate = useNavigate();
+
   return (
-    <div className="product-card">
+    // Karta tıklandığında ürün ID'sine göre detay sayfasına yönlendirir
+    <div className="product-card" onClick={() => navigate(`/product/${id}`)}>
       <div className="product-image">
         <img src={image || "https://placehold.co/300x200?text=Urun+Resmi"} alt={title} />
         <span className="product-category">{category}</span>
