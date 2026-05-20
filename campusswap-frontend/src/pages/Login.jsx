@@ -9,43 +9,59 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // 1. Güvenlik Kontrolü: .edu.tr uzantısı
     if (!email.endsWith('.edu.tr')) {
       setError('Sadece .edu.tr uzantılı üniversite e-postaları ile işlem yapılabilir.');
       return;
     }
 
     if (isRegister) {
-      // --- KAYIT OLMA AKIŞI ---
+      // --- KAYIT OLMA AKIŞI (Aynen Kalıyor) ---
       try {
         const response = await fetch('http://localhost:3000/users/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),
         });
+        const data = await response.json();
+        if (response.ok) {
+          alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+          setIsRegister(false);
+          setPassword('');
+        } else {
+          setError(data.message || 'Kayıt sırasında bir hata oluştu.');
+        }
+      } catch (err) {
+        setError('Sunucuya bağlanılamadı.');
+      }
+    } else {
+      // --- GERÇEK GİRİŞ YAPMA AKIŞI ---
+      try {
+        const response = await fetch('http://localhost:3000/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
         const data = await response.json();
 
         if (response.ok) {
-          alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
-          setIsRegister(false); // Kullanıcıyı giriş yapma sekmesine geçir
-          setPassword(''); // Şifre alanını temizle
+          // 1. Dijital Anahtarı (Token) ve kullanıcı bilgilerini tarayıcı hafızasına kaydet
+          localStorage.setItem('token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          alert(`Hoş geldin, ${data.user.name}!`);
+          navigate('/profile'); // Giriş başarılıysa doğrudan profile uçur
+          window.location.reload(); // Navbar'ın güncellenmesi için sayfayı tazele
         } else {
-          // Backend'den gelen hata mesajını göster (Örn: "Bu e-posta zaten kullanımda")
-          setError(data.message || 'Kayıt sırasında bir hata oluştu.');
+          setError(data.message || 'E-posta veya şifre hatalı.');
         }
       } catch (err) {
-        console.error('Kayıt hatası:', err);
         setError('Sunucuya bağlanılamadı.');
       }
-    } else {
-      // --- GİRİŞ YAPMA AKIŞI (Şimdilik Simüle Ediyoruz) ---
-      alert('Giriş başarılı!');
-      navigate('/');
     }
   };
 

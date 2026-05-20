@@ -10,4 +10,9 @@ export class UsersController {
   register(@Body() userData: any) {
     return this.usersService.register(userData);
   }
+  // Giriş Yapma Uç Noktası (POST /users/login)
+  @Post('login')
+  login(@Body() loginData: any) {
+    return this.usersService.login(loginData);
+  }
 }
