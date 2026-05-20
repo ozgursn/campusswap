@@ -4,4 +4,5 @@ export class CreateProductDto {
   campus!: string;
   price!: number;
   imageUrl?: string;
+  userId!: number;
 }

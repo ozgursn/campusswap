@@ -12,11 +12,17 @@ export class ProductsService {
   ) {}
 
   // 1. Yeni İlan Oluşturma Fonksiyonu
-  create(createProductDto: CreateProductDto) {
-    // Gelen veriden yeni bir ürün objesi yarat
+ create(createProductDto: any) {
+    // createProductDto içerisinden artık userId de gelecek
     const newProduct = this.productsRepository.create(createProductDto);
-    // Veritabanına kaydet
     return this.productsRepository.save(newProduct);
+  }
+  // Belirli bir kullanıcının ilanlarını listeler
+  findByUser(userId: number) {
+    return this.productsRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' }
+    });
   }
 
   // 2. Tüm İlanları Listeleme Fonksiyonu

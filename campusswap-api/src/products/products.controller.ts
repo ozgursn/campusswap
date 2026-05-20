@@ -22,4 +22,9 @@ export class ProductsController {
   findOne(@Param('id', ParseIntPipe) id: number) { 
     return this.productsService.findOne(id); 
   }
+  // Kullanıcının kendi ilanlarını çekmesi için endpoint
+  @Get('user/:userId')
+  findByUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.productsService.findByUser(userId);
+  }
 }

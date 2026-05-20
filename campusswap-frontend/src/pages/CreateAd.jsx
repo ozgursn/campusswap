@@ -18,8 +18,13 @@ const CreateAd = () => {
   };
 
   // Form gönderildiğinde API'ye istek atan fonksiyon
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault(); // Sayfanın yenilenmesini engeller
+
+    // --- EKSİK OLAN VE HATAYA SEBEP OLAN TANIMLAR BURASI ---
+    const savedUser = localStorage.getItem('user');
+    const currentUser = savedUser ? JSON.parse(savedUser) : null;
+    // -----------------------------------------------------
 
     try {
       const response = await fetch('http://localhost:3000/products', {
@@ -27,7 +32,8 @@ const CreateAd = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: Number(formData.price) // Fiyatı sayıya çevirerek gönderiyoruz
+          price: Number(formData.price),
+          userId: currentUser ? currentUser.id : null // Artık tanımlı olduğu için hata vermeyecek
         })
       });
 

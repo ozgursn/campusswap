@@ -1,25 +1,33 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { User } from '../../users/entities/user.entity'; // Kullanıcı tablosunu import ettik
 
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
-  id!: number; // Ünlem eklendi
+  id!: number;
 
   @Column()
-  title!: string; // Ünlem eklendi
+  title!: string;
 
   @Column()
-  category!: string; // Ünlem eklendi
+  category!: string;
 
   @Column()
-  campus!: string; // Ünlem eklendi
+  campus!: string;
 
   @Column('decimal')
-  price!: number; // Ünlem eklendi
+  price!: number;
 
   @Column({ nullable: true })
-  imageUrl?: string; // Soru işareti zaten boş kalabilir demek (nullable)
+  imageUrl!: string;
 
   @CreateDateColumn()
-  createdAt!: Date; // Ünlem eklendi
+  createdAt!: Date;
+
+  // İlişki Kapısı: Bu ilanı açan kullanıcıyı belirtir
+  @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
+  user!: User;
+
+  @Column()
+  userId!: number; // İlişkiyi id bazında yönetmek için kolaylık sağlar
 }
