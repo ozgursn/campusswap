@@ -3,43 +3,43 @@ import { useNavigate } from 'react-router-dom';
 
 const CreateAd = () => {
   const navigate = useNavigate();
-  
-  // Formdaki verileri tutacağımız state (Hafıza)
-  const [formData, setFormData] = useState({
-    title: '',
-    category: 'Kitap & Not',
-    price: '',
-    campus: 'Merkez Kampüs'
-  });
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('Kitap');
+  const [campus, setCampus] = useState('Merkez Kampüs');
+  const [price, setPrice] = useState('');
+  const [imageFile, setImageFile] = useState(null); // Dosyanın kendisini tutacak state
 
-  // Girdiler değiştikçe hafızayı güncelleyen fonksiyon
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // Form gönderildiğinde API'ye istek atan fonksiyon
- const handleSubmit = async (e) => {
-    e.preventDefault(); // Sayfanın yenilenmesini engeller
-
-    // --- EKSİK OLAN VE HATAYA SEBEP OLAN TANIMLAR BURASI ---
     const savedUser = localStorage.getItem('user');
     const currentUser = savedUser ? JSON.parse(savedUser) : null;
-    // -----------------------------------------------------
+
+    // Fotoğraf gönderebilmek için standart JSON yerine FormData kullanıyoruz
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('category', category);
+    formData.append('campus', campus);
+    formData.append('price', Number(price));
+    formData.append('userId', currentUser ? currentUser.id : null);
+    
+    // Eğer kullanıcı bir fotoğraf seçtiyse pakete ekle
+    if (imageFile) {
+      formData.append('image', imageFile); 
+    }
 
     try {
       const response = await fetch('http://localhost:3000/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          price: Number(formData.price),
-          userId: currentUser ? currentUser.id : null // Artık tanımlı olduğu için hata vermeyecek
-        })
+        // DİKKAT: FormData kullanırken 'Content-Type'ı elinle yazmıyorsun, tarayıcı otomatik ayarlar!
+        body: formData, 
       });
 
       if (response.ok) {
-        // İlan başarıyla eklendiyse ana sayfaya yönlendir
+        alert('İlan fotoğrafıyla birlikte başarıyla eklendi!');
         navigate('/');
+      } else {
+        alert('İlan eklenirken bir hata oluştu.');
       }
     } catch (error) {
       console.error("İlan eklenirken hata oluştu:", error);
@@ -48,57 +48,58 @@ const CreateAd = () => {
 
   return (
     <main className="main-content" style={{ display: 'flex', justifyContent: 'center', padding: '3rem 1.5rem' }}>
-      <div style={{ background: 'white', padding: '2.5rem', borderRadius: '1rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', width: '100%', maxWidth: '600px', border: '1px solid var(--border-color)', textAlign: 'left' }}>
+      <div style={{ background: 'white', padding: '2.5rem', borderRadius: '1.5rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', width: '100%', maxWidth: '500px', border: '1px solid var(--border-color)' }}>
         
-        <h2 style={{ marginBottom: '0.5rem', fontSize: '1.8rem', color: 'var(--text-main)' }}>Yeni İlan Ver</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          Kampüsteki diğer öğrencilerin işine yarayacak eşyalarını hemen listele.
-        </p>
+        <h2 style={{ fontSize: '1.6rem', color: 'var(--text-main)', marginBottom: '1.5rem', textAlign: 'center' }}>📦 Yeni İlan Oluştur</h2>
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>İlan Başlığı</label>
-            <input 
-              type="text" name="title" required
-              value={formData.title} onChange={handleChange}
-              placeholder="Örn: Temiz Kullanılmış Fizik 101 Kitabı" 
-              style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none' }}
-            />
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Ürün Adı</label>
+            <input type="text" required placeholder="Örn: Temel Fizik Kitabı" value={title} onChange={(e) => setTitle(e.target.value)} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Kategori</label>
-              <select name="category" value={formData.category} onChange={handleChange} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
-                <option>Kitap & Not</option>
-                <option>Elektronik</option>
-                <option>Ev & Yurt Eşyası</option>
-                <option>Hobi & Spor</option>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Kategori</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', backgroundColor: '#f8fafc' }}>
+                <option value="Kitap">📚 Kitap</option>
+                <option value="Elektronik">⚡ Elektronik</option>
+                <option value="Eşya">🪑 Ev/Oda Eşyası</option>
+                <option value="Giyim">👕 Giyim</option>
+                <option value="Diğer">🌀 Diğer</option>
               </select>
             </div>
+
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Fiyat (TL)</label>
-              <input 
-                type="number" name="price" required min="0"
-                value={formData.price} onChange={handleChange}
-                placeholder="0.00" 
-                style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none' }}
-              />
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Kampüs</label>
+              <select value={campus} onChange={(e) => setCampus(e.target.value)} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', backgroundColor: '#f8fafc' }}>
+                <option value="Merkez Kampüs">Merkez Kampüs</option>
+                <option value="Mühendislik Kampüsü">Mühendislik Kampüsü</option>
+                <option value="Tıp Fakültesi">Tıp Fakültesi</option>
+              </select>
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>Teslimat Kampüsü</label>
-            <select name="campus" value={formData.campus} onChange={handleChange} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', background: 'white' }}>
-              <option>Merkez Kampüs</option>
-              <option>Kuzey Kampüs</option>
-              <option>Tıp Fakültesi Kampüsü</option>
-            </select>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Fiyat (TL)</label>
+            <input type="number" required placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem' }} />
           </div>
 
-          <button type="submit" className="btn-post" style={{ marginTop: '1rem', padding: '1rem', fontSize: '1rem' }}>
-            İlanı Yayına Al
+          {/* YENİ DOSYA SEÇME ALANI */}
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Ürün Fotoğrafı</label>
+            <input 
+              type="file" 
+              accept="image/*" // Sadece resim dosyalarını seçtirir
+              required // Şimdilik zorunlu yapalım test için
+              onChange={(e) => setImageFile(e.target.files[0])} // Seçilen ilk dosyayı state'e atar
+              style={{ width: '100%', padding: '0.5rem', border: '1px dashed #cbd5e1', borderRadius: '0.5rem', cursor: 'pointer' }} 
+            />
+          </div>
+
+          <button type="submit" className="btn-post" style={{ padding: '1rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', marginTop: '1rem' }}>
+            🚀 İlanı Yayınla
           </button>
 
         </form>

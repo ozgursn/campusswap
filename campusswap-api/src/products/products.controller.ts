@@ -1,12 +1,31 @@
-import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe } from '@nestjs/common'; // Delete ve ParseIntPipe burada
+import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  // Fotoğraflı Yeni İlan Verme Uç Noktası
   @Post()
-  create(@Body() createProductDto: any) {
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads', // Dosyaların kaydedileceği klasör
+      filename: (req, file, callback) => {
+        // Resim isimlerinin çakışmaması için benzersiz bir isim üretiyoruz (Örn: ad-123456.jpg)
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = extname(file.originalname);
+        callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+      }
+    })
+  }))
+  create(@Body() createProductDto: any, @UploadedFile() file: Express.Multer.File) {
+    // Eğer kullanıcı bir fotoğraf yüklediyse, bunun internet yolunu veritabanına kaydedelim
+    if (file) {
+      createProductDto.imageUrl = `http://localhost:3000/uploads/${file.filename}`;
+    }
     return this.productsService.create(createProductDto);
   }
 
@@ -25,7 +44,6 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
-  // Silme uç noktası
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Body('userId', ParseIntPipe) userId: number) {
     return this.productsService.remove(id, userId);
