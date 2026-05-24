@@ -24,7 +24,7 @@ export class Product {
   @CreateDateColumn()
   createdAt!: Date;
 
-  // İlişki Kapısı: Bu ilanı açan kullanıcıyı belirtir
+ // product.entity.ts içindeki @ManyToOne ilişkisinin tam doğru yazımı:
   @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
   user!: User;
 

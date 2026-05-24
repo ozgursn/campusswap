@@ -23,9 +23,14 @@ export class ProductsService {
     });
   }
 
-  // Tek bir ilanın detayını getirme (Güvenli - ParseIntPipe ile çalışır)
   findOne(id: number) {
-    return this.productsRepository.findOneBy({ id });
+    // TypeORM'un yeni nesil nesne tabanlı relation yazımı:
+    return this.productsRepository.findOne({
+      where: { id },
+      relations: {
+        user: true // user ilişkisini true yaparak yükle diyoruz
+      }
+    });
   }
 
   // Belirli bir kullanıcının ilanlarını listeleme (Profil sayfası için)
