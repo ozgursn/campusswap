@@ -4,7 +4,15 @@ import { useNavigate } from 'react-router-dom';
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [myProducts, setMyProducts] = useState([]); // Gerçek ilanlar için state
+  const [myProducts, setMyProducts] = useState([]);
+
+  // Sayfa yüklenirken ilanları çeken fonksiyon (Silme işleminden sonra da tazelemek için dışarı aldık)
+  const fetchMyProducts = (userId) => {
+    fetch(`http://localhost:3000/products/user/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setMyProducts(data))
+      .catch((err) => console.error("İlanlar yüklenemedi:", err));
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -18,13 +26,35 @@ const Profile = () => {
 
     const currentUser = JSON.parse(savedUser);
     setUser(currentUser);
-
-    // Backend'den sadece bu kullanıcıya ait ilanları çekiyoruz
-    fetch(`http://localhost:3000/products/user/${currentUser.id}`)
-      .then((res) => res.json())
-      .then((data) => setMyProducts(data))
-      .catch((err) => console.error("İlanlar yüklenemedi:", err));
+    fetchMyProducts(currentUser.id);
   }, [navigate]);
+
+  // GERÇEK SİLME FONKSİYONU
+  const handleDelete = async (productId) => {
+    if (!window.confirm('Bu ilanı tamamen kaldırmak istediğinize emin misiniz?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/products/${productId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }) // Güvenlik kontrolü için kendi ID'mizi gönderiyoruz
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('İlan başarıyla kaldırıldı.');
+        fetchMyProducts(user.id); // Listeyi canlı olarak güncelle (Sayfa yenilenmeden ilan uçacak)
+      } else {
+        alert(data.message || 'Silme işlemi başarısız oldu.');
+      }
+    } catch (err) {
+      console.error('Silme hatası:', err);
+      alert('Sunucuyla bağlantı kurulamadı.');
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -57,7 +87,7 @@ const Profile = () => {
         </button>
       </div>
 
-      {/* Sağ Kart: Gerçek Dinamik İlanlarım */}
+      {/* Sağ Kart: Güvenli İlan Listesi ve Silme Butonu */}
       <div style={{ background: 'white', padding: '2.5rem', borderRadius: '1.5rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', flex: '1', maxWidth: '600px', border: '1px solid var(--border-color)', textAlign: 'left' }}>
         <h3 style={{ fontSize: '1.4rem', color: 'var(--text-main)', marginBottom: '1.5rem' }}>📦 İlanlarım ({myProducts.length})</h3>
         
@@ -72,9 +102,16 @@ const Profile = () => {
                   <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{item.price} TL</span>
                   <span style={{ fontSize: '0.8rem', color: 'gray', marginLeft: '1rem' }}>📍 {item.campus}</span>
                 </div>
-                <span style={{ padding: '0.3rem 0.8rem', borderRadius: '1rem', fontSize: '0.8rem', fontWeight: '600', background: '#dcfce7', color: '#15803d' }}>
-                  Yayında
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <button 
+                    onClick={() => handleDelete(item.id)}
+                    style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fca5a5'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#fee2e2'}
+                  >
+                    🗑️ Sil
+                  </button>
+                </div>
               </div>
             ))
           )}
