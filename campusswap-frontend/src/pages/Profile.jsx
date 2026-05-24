@@ -6,7 +6,17 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [myProducts, setMyProducts] = useState([]);
 
-  // Sayfa yüklenirken ilanları çeken fonksiyon (Silme işleminden sonra da tazelemek için dışarı aldık)
+  // --- PREMIUM ÖDEME STATE'LERİ ---
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+
+  // Sembolik kredi kartı inputları
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Sayfa yüklenirken ilanları çeken fonksiyon
   const fetchMyProducts = (userId) => {
     fetch(`http://localhost:3000/products/user/${userId}`)
       .then((res) => res.json())
@@ -31,7 +41,7 @@ const Profile = () => {
 
   // GERÇEK SİLME FONKSİYONU
   const handleDelete = async (productId) => {
-    if (!window.confirm('Bu ilanı tamamen kaldırmak istediğinize emin misiniz?')) {
+    if (!window.confirm('Bu ilanı tamamen kaldırırmak istediğinize emin misiniz?')) {
       return;
     }
 
@@ -39,14 +49,14 @@ const Profile = () => {
       const response = await fetch(`http://localhost:3000/products/${productId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }) // Güvenlik kontrolü için kendi ID'mizi gönderiyoruz
+        body: JSON.stringify({ userId: user.id })
       });
 
       const data = await response.json();
 
       if (response.ok) {
         alert('İlan başarıyla kaldırıldı.');
-        fetchMyProducts(user.id); // Listeyi canlı olarak güncelle (Sayfa yenilenmeden ilan uçacak)
+        fetchMyProducts(user.id);
       } else {
         alert(data.message || 'Silme işlemi başarısız oldu.');
       }
@@ -54,6 +64,39 @@ const Profile = () => {
       console.error('Silme hatası:', err);
       alert('Sunucuyla bağlantı kurulamadı.');
     }
+  };
+
+  // Ödeme penceresini açan fonksiyon
+  const openCheckout = (productId) => {
+    setSelectedProductId(productId);
+    setIsCheckoutOpen(true);
+  };
+
+  // Sembolik Ödemeyi Tamamlayıp Backend'e Sinyal Gönderen Fonksiyon
+  const handleCompletePayment = async (e) => {
+    e.preventDefault();
+    setPaymentLoading(true);
+
+    // Gerçekçi olsun diye banka onay sürecini 2 saniye simüle ediyoruz
+    setTimeout(async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/products/${selectedProductId}/premium`, {
+          method: 'PATCH',
+        });
+
+        if (response.ok) {
+          alert('💳 Ödeme Başarılı! 3D Secure Onayı Alındı.\n🌟 İlanınız başarıyla vitrine taşındı!');
+          setIsCheckoutOpen(false);
+          window.location.reload(); // Sayfayı yenileyerek güncel halini gösterelim
+        } else {
+          alert('Ödeme onaylandı fakat ilan güncellenirken bir sorun oluştu.');
+        }
+      } catch (error) {
+        console.error("Premium doping hatası:", error);
+      } finally {
+        setPaymentLoading(false);
+      }
+    }, 2000);
   };
 
   const handleLogout = () => {
@@ -87,7 +130,7 @@ const Profile = () => {
         </button>
       </div>
 
-      {/* Sağ Kart: Güvenli İlan Listesi ve Silme Butonu */}
+      {/* Sağ Kart: Güvenli İlan Listesi, Silme ve Premium Butonları */}
       <div style={{ background: 'white', padding: '2.5rem', borderRadius: '1.5rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', flex: '1', maxWidth: '600px', border: '1px solid var(--border-color)', textAlign: 'left' }}>
         <h3 style={{ fontSize: '1.4rem', color: 'var(--text-main)', marginBottom: '1.5rem' }}>📦 İlanlarım ({myProducts.length})</h3>
         
@@ -102,21 +145,87 @@ const Profile = () => {
                   <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{item.price} TL</span>
                   <span style={{ fontSize: '0.8rem', color: 'gray', marginLeft: '1rem' }}>📍 {item.campus}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+
+                {/* İşlem Butonları Bölümü (Dikey Hizalanmış) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '140px' }}>
                   <button 
                     onClick={() => handleDelete(item.id)}
-                    style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
+                    style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
                     onMouseOver={(e) => e.currentTarget.style.background = '#fca5a5'}
                     onMouseOut={(e) => e.currentTarget.style.background = '#fee2e2'}
                   >
                     🗑️ Sil
                   </button>
+
+                  {/* İlan zaten premium değilse "Öne Çıkar" butonu çıksın, premiumsa yeşil rozet çıksın */}
+                  {!item.isPremium ? (
+                    <button 
+                      onClick={() => openCheckout(item.id)}
+                      style={{ background: '#FFB703', color: '#0D1F16', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}
+                    >
+                      🌟 Öne Çıkar
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: '0.8rem', color: '#1B4332', fontWeight: 'bold', textAlign: 'center', background: '#D8F3DC', padding: '0.4rem', borderRadius: '0.5rem', border: '1px solid #52B788' }}>
+                      🚀 Öne Çıkarıldı
+                    </span>
+                  )}
                 </div>
+
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* 💳 SEMBOLİK 3D SECURE ÖDEME POPUP PENCERESİ */}
+      {isCheckoutOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '1rem', width: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: '#0D1F16', fontSize: '1.2rem' }}>🌟 Premium İlan Dopingi</h3>
+              <button onClick={() => setIsCheckoutOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1.5rem', lineHeight: '1.4' }}>
+              İlanınızın kampüs ana sayfasında en üst sırada listelenmesi için sembolik doping ücreti: <strong>29.90 TL</strong>
+            </p>
+
+            <form onSubmit={handleCompletePayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.3rem' }}>Kart Üzerindeki İsim</label>
+                <input type="text" required placeholder="Özgür Yılmaz" style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.3rem' }}>Kart Numarası</label>
+                <input type="text" required maxLength="19" placeholder="4355 4400 1234 1920" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.3rem' }}>Son Kullanma</label>
+                  <input type="text" required placeholder="MM/YY" maxLength="5" value={expiry} onChange={(e) => setExpiry(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.3rem' }}>CVV</label>
+                  <input type="password" required maxLength="3" placeholder="***" value={cvv} onChange={(e) => setCvv(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={paymentLoading}
+                style={{ background: '#2D6A4F', color: 'white', border: 'none', padding: '0.8rem', borderRadius: '0.5rem', fontWeight: 'bold', fontSize: '0.95rem', cursor: paymentLoading ? 'not-allowed' : 'pointer', marginTop: '1rem', opacity: paymentLoading ? 0.7 : 1 }}
+              >
+                {paymentLoading ? '🔒 Güvenli Ödeme Yapılıyor...' : '💳 29.90 TL Öde ve Öne Çıkar'}
+              </button>
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </main>
   );

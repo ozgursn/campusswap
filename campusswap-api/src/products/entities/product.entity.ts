@@ -30,4 +30,7 @@ export class Product {
 
   @Column()
   userId!: number; // İlişkiyi id bazında yönetmek için kolaylık sağlar
+
+  @Column({ default: false })
+  isPremium!: boolean;
 }

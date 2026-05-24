@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
-import { ChatModule } from './chat/chat.module';
+//import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { ChatModule } from './chat/chat.module';
     }),
     ProductsModule,
     UsersModule,
-    ChatModule,
+    //ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

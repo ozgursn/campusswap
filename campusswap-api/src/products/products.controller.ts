@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile, Patch } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { diskStorage } from 'multer';
@@ -47,5 +47,10 @@ export class ProductsController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Body('userId', ParseIntPipe) userId: number) {
     return this.productsService.remove(id, userId);
+  }
+
+  @Patch(':id/premium')
+  makePremium(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.makePremium(id);
   }
 }
