@@ -33,4 +33,7 @@ export class Product {
 
   @Column({ default: false })
   isPremium!: boolean;
+  
+  @Column({ default: false })
+  isUrgent!: boolean;
 }

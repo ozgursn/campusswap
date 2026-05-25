@@ -49,8 +49,19 @@ export class ProductsController {
     return this.productsService.remove(id, userId);
   }
 
+ // products.controller.ts dosyasının en alt satırları
+
   @Patch(':id/premium')
   makePremium(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.makePremium(id);
   }
-}
+
+  // 🚀 404 HATASINI ÇÖZEN GÜNCEL METOT:
+  // ParseIntPipe ekleyerek gelen ID parametresini güvenli bir sayıya dönüştürüyoruz
+  @Patch(':id/make-urgent')
+  makeUrgent(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.makeUrgent(id);
+  }
+  
+} // Sınıf kapanış parantezi
+  

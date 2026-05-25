@@ -6,7 +6,7 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- DÜN EKLEDİĞİMİZ ARAMA/FİLTRE STATE'LERİ ---
+  // --- ARAMA/FİLTRE STATE'LERİ ---
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Hepsi');
   const [campus, setCampus] = useState('Hepsi');
@@ -20,7 +20,7 @@ const Home = () => {
     if (category !== 'Hepsi') queryParams.append('category', category);
     if (campus !== 'Hepsi') queryParams.append('campus', campus);
 
-    // Backend API'mizden filtreleri ve premium sıralamasını çekiyoruz
+    // Backend API'mizden filtreleri, acil ve premium sıralamasını çekiyoruz
     fetch(`http://localhost:3000/products?${queryParams.toString()}`)
       .then((res) => res.json())
       .then((data) => {
@@ -75,6 +75,7 @@ const Home = () => {
 
       </div>
 
+      {/* 📢 İLANLAR VİTRİN ALANI */}
       <section className="ads-section" style={{ paddingBottom: '4rem' }}>
         <div className="section-header">
           <h2>📢 Güncel Kampüs İlanları</h2>
@@ -91,13 +92,7 @@ const Home = () => {
             {products.map((item) => (
               <ProductCard 
                 key={item.id} 
-                id={item.id}
-                title={item.title}
-                price={item.price}
-                campus={item.campus}
-                category={item.category}
-                image={item.imageUrl}
-                isPremium={item.isPremium} // 🌟 İLANIN PREMIUM BİLGİSİNİ KARTA PASLIYORUZ!
+                product={item} // 🚀 Uyuşmazlığı çözen, tüm objeyi tek seferde gönderen güvenli yapı!
               />
             ))}
           </div>

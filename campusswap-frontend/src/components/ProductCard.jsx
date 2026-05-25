@@ -1,112 +1,95 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+// 🚨 KİLİT IMPORT: Detay sayfasına uçmak için React Router kancasını ekliyoruz
+import { useNavigate } from 'react-router-dom';
 
-const ProductCard = ({ id, title, price, campus, category, image, isPremium }) => {
+export default function ProductCard({ product }) {
+  // 🛡️ Güvenlik kalkanı
+  if (!product) return null;
+
+  const navigate = useNavigate(); // 👈 Yönlendiriciyi bileşen içinde tanımlıyoruz
+
+  const { id, title, price, imageUrl, category, campus, isPremium, isUrgent, user } = product;
+
+  let cardStyle = {
+    position: 'relative',
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '1.2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    transition: 'all 0.3s ease',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+    cursor: 'pointer' // 👈 Kullanıcı üzerine geldiğinde tıklanabilir el işareti çıksın
+  };
+
+  if (isUrgent) {
+    cardStyle.border = '2px solid #ef4444';
+    cardStyle.boxShadow = '0 0 15px rgba(239, 68, 68, 0.3)';
+    cardStyle.animation = 'pulse 2s infinite ease-in-out'; 
+  } else if (isPremium) {
+    cardStyle.border = '2px solid #FB8500';
+    cardStyle.boxShadow = '0 0 12px rgba(251, 133, 0, 0.2)';
+  }
+
+  // Yerel veritabanındaki gerçek yüklenen resmi frontend'e bağlayan fonksiyon
+  const getProductImage = () => {
+    if (!imageUrl) return 'https://via.placeholder.com/300'; 
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return `http://localhost:3000/${imageUrl}`;
+  };
+
   return (
-    <Link 
-      to={`/product/${id}`} 
-      className="product-card" 
-      style={{ 
-        textDecoration: 'none', 
-        color: 'inherit', 
-        background: 'white', 
-        borderRadius: '1rem', 
-        overflow: 'hidden', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        position: 'relative',
-        transition: 'all 0.3s ease',
-        
-        // 🌟 PREMIUM PARILTI SİHRİ: İlan premium ise altın sarısı kalın çerçeve ve neon gölge efekti ekliyoruz
-        border: isPremium ? '2.5px solid #FFB703' : '1px solid var(--border-color)', 
-        boxShadow: isPremium 
-          ? '0 10px 25px rgba(255, 183, 3, 0.35), 0 0 15px rgba(255, 183, 3, 0.2)' 
-          : '0 4px 6px -1px rgba(0,0,0,0.05)', 
-      }}
-      // Üzerine gelindiğinde yukarı doğru hafifçe esneme (hover) efekti
-      onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-      onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+    // 🚨 KİLİT DEĞİŞİKLİK: En dıştaki div'e onClick vererek tüm kartı tıklanabilir yaptık!
+    // Bu sayede tıklandığı an urldeki ID ile detay sayfasına gidip satıcı verilerini çekecek.
+    <div 
+      style={cardStyle} 
+      className={isUrgent ? 'urgent-card' : ''} 
+      onClick={() => navigate(`/product/${id}`)}
     >
       
-      {/* 🌟 PREMIUM VIP ROZETİ: Sadece premium ilanlarda sol üst köşede parlar */}
-      {isPremium && (
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          left: '12px',
-          background: 'linear-gradient(135deg, #FFB703, #FB8500)', // Canva tasarımdaki turuncu-altın geçişi
-          color: '#0D1F16',
-          padding: '0.4rem 0.8rem',
-          borderRadius: '2rem',
-          fontSize: '0.7rem',
-          fontWeight: '800',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-          zIndex: 10,
-          letterSpacing: '0.5px'
-        }}>
+      {/* ⚡ ACİL SATILIK ROZETI */}
+      {isUrgent && (
+        <div style={{ position: 'absolute', top: '-12px', left: '16px', backgroundColor: '#ef4444', color: '#ffffff', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: '800', zIndex: 10 }}>
+          ⚡ ACİL SATILIK
+        </div>
+      )}
+
+      {/* 🌟 PREMIUM ROZETI */}
+      {!isUrgent && isPremium && (
+        <div style={{ position: 'absolute', top: '-12px', left: '16px', backgroundColor: '#FB8500', color: '#ffffff', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: '800', zIndex: 10 }}>
           🌟 ÖNE ÇIKAN İLAN
         </div>
       )}
 
-      {/* Ürün Görsel Alanı */}
-      <div style={{ height: '200px', width: '100%', overflow: 'hidden', background: '#f1f5f9', position: 'relative' }}>
+      {/* 📦 KULLANICININ YÜKLEDİĞİ GERÇEK RESİM */}
+      <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
         <img 
-          src={image || 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500'} 
-          alt={title} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          src={getProductImage()} 
+          alt={title || 'Ürün'} 
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
         />
       </div>
 
-      {/* Ürün Bilgi Alanı */}
-      <div style={{ padding: '1.2rem', flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div>
-          {/* Kategori Rozeti */}
-          <span style={{ 
-            fontSize: '0.75rem', 
-            background: isPremium ? '#FFF3D1' : '#f1f5f9', 
-            padding: '0.2rem 0.6rem', 
-            borderRadius: '1rem', 
-            fontWeight: '700', 
-            color: isPremium ? '#B57A00' : '#475569' 
-          }}>
-            {category}
-          </span>
-          
-          {/* İlan Başlığı */}
-          <h3 style={{ 
-            fontSize: '1.1rem', 
-            marginTop: '0.5rem', 
-            marginBottom: '0.5rem', 
-            color: 'var(--text-main)', 
-            whiteSpace: 'nowrap', 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis', 
-            fontWeight: isPremium ? '700' : '500' 
-          }}>
-            {title}
-          </h3>
-          
-          {/* Kampüs Bilgisi */}
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>📍 {campus}</p>
-        </div>
-        
-        {/* Fiyat Alanı */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.8rem' }}>
-          <span style={{ 
-            fontSize: '1.2rem', 
-            fontWeight: '800', 
-            color: isPremium ? '#FB8500' : 'var(--text-main)' 
-          }}>
-            {price} TL
-          </span>
-          <span style={{ fontSize: '0.75rem', color: 'gray', fontWeight: '500' }}>
-            🔎 İncele
-          </span>
-        </div>
+      {/* Ürün Bilgileri */}
+      <div>
+        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isUrgent ? '#ef4444' : (isPremium ? '#FB8500' : '#52B788'), textTransform: 'uppercase' }}>
+          {category} • {campus}
+        </span>
+        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginTop: '0.3rem', color: '#0D1F16' }}>{title}</h3>
       </div>
 
-    </Link>
-  );
-};
+      {/* Fiyat ve Satıcı */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.8rem', marginTop: 'auto' }}>
+        <span style={{ fontSize: '1.25rem', fontWeight: '800', color: isUrgent ? '#ef4444' : (isPremium ? '#FB8500' : '#1B4332') }}>
+          {price} TL
+        </span>
+        <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '600' }}>
+          👤 {user?.username || 'Öğrenci'}
+        </span>
+      </div>
 
-export default ProductCard;
+    </div>
+  );
+}
