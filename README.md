@@ -48,4 +48,4 @@ Yeni bir terminal sekmesi açarak:
 > Arayüze http://localhost:5173 adresinden ulaşabilirsiniz.
 
 ---
-**Geliştirici:** Özgür Uğur ŞEN| Bilgisayar Mühendisliği - 21253060
+**Geliştirici:** Özgür Uğur ŞEN| Bilgisayar Mühendisliği 
