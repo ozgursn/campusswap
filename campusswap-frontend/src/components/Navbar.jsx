@@ -18,11 +18,6 @@ const Navbar = () => {
           <h1>Campus<span>Swap</span></h1>
         </div>
 
-        <div className="search-bar">
-          <input type="text" placeholder="Kampüste ne arıyorsun?" />
-          <button className="search-btn">Ara</button>
-        </div>
-
         <nav className="nav-links">
           {/* Giriş Yapılmadıysa Bu Butonları Göster */}
           {!token ? (

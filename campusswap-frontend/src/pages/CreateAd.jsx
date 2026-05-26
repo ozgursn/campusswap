@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// 🚨 KİLİT IMPORT: Modern bildirim motorunu sayfaya dahil ediyoruz
+import { toast } from 'react-toastify';
 
 const CreateAd = () => {
   const navigate = useNavigate();
@@ -15,13 +17,19 @@ const CreateAd = () => {
     const savedUser = localStorage.getItem('user');
     const currentUser = savedUser ? JSON.parse(savedUser) : null;
 
+    if (!currentUser) {
+      toast.error('❌ İlan verebilmek için önce giriş yapmalısınız!');
+      navigate('/login');
+      return;
+    }
+
     // Fotoğraf gönderebilmek için standart JSON yerine FormData kullanıyoruz
     const formData = new FormData();
     formData.append('title', title);
     formData.append('category', category);
     formData.append('campus', campus);
     formData.append('price', Number(price));
-    formData.append('userId', currentUser ? currentUser.id : null);
+    formData.append('userId', currentUser.id);
     
     // Eğer kullanıcı bir fotoğraf seçtiyse pakete ekle
     if (imageFile) {
@@ -29,6 +37,7 @@ const CreateAd = () => {
     }
 
     try {
+      // ⏳ Bilgi: İstek başladığında kullanıcıya ufak bir yükleniyor havası verebiliriz, ama doğrudan fetch'e geçiyoruz
       const response = await fetch('http://localhost:3000/products', {
         method: 'POST',
         // DİKKAT: FormData kullanırken 'Content-Type'ı elinle yazmıyorsun, tarayıcı otomatik ayarlar!
@@ -36,13 +45,16 @@ const CreateAd = () => {
       });
 
       if (response.ok) {
-        alert('İlan fotoğrafıyla birlikte başarıyla eklendi!');
+        // 🚀 Başarılı İlan Ekleme Bildirimi
+        toast.success('🎉 İlanınız fotoğrafıyla birlikte başarıyla kampüs vitrinine eklendi!');
         navigate('/');
       } else {
-        alert('İlan eklenirken bir hata oluştu.');
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.message || '❌ İlan eklenirken bir hata oluştu. Verileri kontrol edin.');
       }
     } catch (error) {
       console.error("İlan eklenirken hata oluştu:", error);
+      toast.error('🌐 Sunucuya bağlanılamadı. Backend API ayakta mı?');
     }
   };
 
@@ -86,7 +98,7 @@ const CreateAd = () => {
             <input type="number" required placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} style={{ width: '100%', padding: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem' }} />
           </div>
 
-          {/* YENİ DOSYA SEÇME ALANI */}
+          {/* DOSYA SEÇME ALANI */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Ürün Fotoğrafı</label>
             <input 

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+// 🚨 KİLİT IMPORT: Modern bildirim kütüphanesini dahil ediyoruz
+import { toast } from 'react-toastify';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -24,21 +26,23 @@ const ProductDetail = () => {
       });
   }, [id]);
 
-// E-POSTA İLETİŞİM MOTORU (Outlook Türkçe Karakter Çözümü)
+  // E-POSTA İLETİŞİM MOTORU (Outlook Türkçe Karakter Çözümlü)
   const handleContactSeller = () => {
+    // 🚨 ESKİ ALERT YERİNE MODERN UYARI
     if (!currentUser) {
-      alert('Satıcıyla iletişime geçebilmek için önce giriş yapmalısınız.');
+      toast.warn('🔑 Satıcıyla iletişime geçebilmek için önce giriş yapmalısınız.');
       navigate('/login');
       return;
     }
 
     const sellerEmail = product.user?.email;
+    // 🚨 ESKİ ALERT YERİNE MODERN HATA BİLDİRİMİ
     if (!sellerEmail) {
-      alert('Satıcı iletişim bilgisine ulaşılamadı.');
+      toast.error('❌ Satıcının iletişim bilgisine şu an ulaşılamıyor.');
       return;
     }
 
-    const subjectText = `CampusSwap - ${product.title} Ilandiniz Hakkinda`; // Konu başlığını daha da garantiye almak için İngilizce karakter tonunda tutabiliriz
+    const subjectText = `CampusSwap - ${product.title} Ilandiniz Hakkinda`; 
     
     // Gövde metni
     const bodyText = `Merhaba,\n\nCampusSwap platformunda yayinladiginiz "${product.title}" baslikli ilaninizla ilgileniyorum. Urun hala satilik mi? Kampuste ne zaman ve nerede bulusabiliriz?\n\nIyi calismalar,\n${currentUser.name}`;
@@ -51,8 +55,8 @@ const ProductDetail = () => {
     window.location.href = `mailto:${sellerEmail}?subject=${subject}&body=${body}`;
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '5rem' }}>İlan yükleniyor...</div>;
-  if (!product) return <div style={{ textAlign: 'center', padding: '5rem' }}>İlan bulunamadı.</div>;
+  if (loading) return <div style={{ textAlign: 'center', padding: '5rem', color: 'gray' }}>İlan yükleniyor...</div>;
+  if (!product) return <div style={{ textAlign: 'center', padding: '5rem', color: 'gray' }}>İlan bulunamadı.</div>;
 
   return (
     <main className="main-content" style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1.5rem' }}>

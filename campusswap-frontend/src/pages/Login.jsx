@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// 🚨 KİLİT IMPORT: Modern bildirim motorunu sayfaya dahil ediyoruz
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -7,19 +9,18 @@ const Login = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
+    // 🎓 ÜNİVERSİTE E-POSTA KONTROLÜ
     if (!email.endsWith('.edu.tr')) {
-      setError('Sadece .edu.tr uzantılı üniversite e-postaları ile işlem yapılabilir.');
+      toast.warn('🎓 Sadece .edu.tr uzantılı üniversite e-postaları ile işlem yapılabilir.');
       return;
     }
 
     if (isRegister) {
-      // --- KAYIT OLMA AKIŞI (Aynen Kalıyor) ---
+      // --- KAYIT OLMA AKIŞI ---
       try {
         const response = await fetch('http://localhost:3000/users/register', {
           method: 'POST',
@@ -27,15 +28,17 @@ const handleSubmit = async (e) => {
           body: JSON.stringify({ name, email, password }),
         });
         const data = await response.json();
+        
         if (response.ok) {
-          alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+          // 🚀 Başarılı Kayıt Bildirimi
+          toast.success('🎉 Kayıt başarılı! Şimdi öğrenci hesabınızla giriş yapabilirsiniz.');
           setIsRegister(false);
           setPassword('');
         } else {
-          setError(data.message || 'Kayıt sırasında bir hata oluştu.');
+          toast.error(data.message || 'Kayıt sırasında bir hata oluştu.');
         }
       } catch (err) {
-        setError('Sunucuya bağlanılamadı.');
+        toast.error('🌐 Sunucuya bağlanılamadı. Backend ayakta mı?');
       }
     } else {
       // --- GERÇEK GİRİŞ YAPMA AKIŞI ---
@@ -53,14 +56,16 @@ const handleSubmit = async (e) => {
           localStorage.setItem('token', data.access_token);
           localStorage.setItem('user', JSON.stringify(data.user));
 
-          alert(`Hoş geldin, ${data.user.name}!`);
+          // 🚀 Başarılı Giriş Bildirimi
+          toast.success(`👤 Hoş geldin, ${data.user.name}! Kampüs ağına bağlandın.`);
+          
           navigate('/profile'); // Giriş başarılıysa doğrudan profile uçur
           window.location.reload(); // Navbar'ın güncellenmesi için sayfayı tazele
         } else {
-          setError(data.message || 'E-posta veya şifre hatalı.');
+          toast.error(data.message || 'E-posta veya şifre hatalı.');
         }
       } catch (err) {
-        setError('Sunucuya bağlanılamadı.');
+        toast.error('🌐 Sunucuya bağlanılamadı. Ağ bağlantınızı kontrol edin.');
       }
     }
   };
@@ -81,14 +86,14 @@ const handleSubmit = async (e) => {
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
           <button 
             type="button"
-            onClick={() => { setIsRegister(false); setError(''); }}
+            onClick={() => { setIsRegister(false); }}
             style={{ flex: 1, background: 'none', border: 'none', fontSize: '1.2rem', fontWeight: isRegister ? '500' : '700', color: isRegister ? 'var(--text-muted)' : 'var(--text-main)', cursor: 'pointer' }}
           >
             Giriş Yap
           </button>
           <button 
             type="button"
-            onClick={() => { setIsRegister(true); setError(''); }}
+            onClick={() => { setIsRegister(true); }}
             style={{ flex: 1, background: 'none', border: 'none', fontSize: '1.2rem', fontWeight: isRegister ? '700' : '500', color: isRegister ? 'var(--text-main)' : 'var(--text-muted)', cursor: 'pointer' }}
           >
             Kayıt Ol
@@ -122,9 +127,8 @@ const handleSubmit = async (e) => {
             <input 
               type="email" required placeholder="ogrenci@universite.edu.tr" 
               value={email} onChange={(e) => setEmail(e.target.value)}
-              style={{ width: '100%', padding: '0.8rem 1rem', border: error ? '1px solid #ef4444' : '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', backgroundColor: '#f8fafc' }} 
+              style={{ width: '100%', padding: '0.8rem 1rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', backgroundColor: '#f8fafc' }} 
             />
-            {error && <span style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.4rem', display: 'block' }}>{error}</span>}
           </div>
 
           <div>

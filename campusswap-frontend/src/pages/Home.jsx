@@ -8,15 +8,30 @@ const Home = () => {
 
   // --- ARAMA/FİLTRE STATE'LERİ ---
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(''); // 🚀 MÜHENDİSLİK DOKUNUŞU: Gecikmeli arama state'i
   const [category, setCategory] = useState('Hepsi');
   const [campus, setCampus] = useState('Hepsi');
 
+  // ⏱️ 1. ADIM: Kullanıcı yazmayı bırakınca 300ms sonra debouncedSearch state'ini güncelle
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300); // 300 milisaniye gecikme
+
+    return () => {
+      clearTimeout(handler); // Kullanıcı yazmaya devam ederse eski zamanlayıcıyı yok et
+    };
+  }, [search]);
+
+  // 🌐 2. ADIM: API İsteklerini Yöneten useEffect (Sadece debouncedSearch değişince tetiklenir)
   useEffect(() => {
     setLoading(true);
 
     // Dinamik URL parametrelerini hazırlıyoruz
     const queryParams = new URLSearchParams();
-    if (search.trim()) queryParams.append('search', search);
+    
+    // 🚨 KİLİT DEĞİŞİKLİK: 'search' yerine 'debouncedSearch' değerini gönderiyoruz
+    if (debouncedSearch.trim()) queryParams.append('search', debouncedSearch);
     if (category !== 'Hepsi') queryParams.append('category', category);
     if (campus !== 'Hepsi') queryParams.append('campus', campus);
 
@@ -31,7 +46,7 @@ const Home = () => {
         console.error("Veri çekme hatası:", err);
         setLoading(false);
       });
-  }, [search, category, campus]); // Filtreler değiştikçe tetiklenir
+  }, [debouncedSearch, category, campus]); // 🚀 search yerine debouncedSearch dinleniyor
 
   return (
     <main className="main-content" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
@@ -46,7 +61,7 @@ const Home = () => {
             type="text" 
             placeholder="🔍 Kampüste ne aramıştınız? (Örn: Fizik Kitabı, Hesap Makinesi)" 
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)} // State anlık güncellenir, UI kasmaz
             style={{ width: '100%', padding: '0.8rem 1rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', outline: 'none', fontSize: '0.95rem' }}
           />
         </div>
@@ -92,7 +107,7 @@ const Home = () => {
             {products.map((item) => (
               <ProductCard 
                 key={item.id} 
-                product={item} // 🚀 Uyuşmazlığı çözen, tüm objeyi tek seferde gönderen güvenli yapı!
+                product={item}
               />
             ))}
           </div>

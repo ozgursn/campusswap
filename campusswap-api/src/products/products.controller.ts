@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile, Patch, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { diskStorage } from 'multer';
@@ -29,9 +29,15 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
+// 🚨 KİLİT DEĞİŞİKLİK: URL'den gelen query parametrelerini @Query ile yakalıyoruz
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('campus') campus?: string,
+  ) {
+    // Yakaladığımız arama kelimesini, kategori ve kampüsü servisteki canavar filtreye fırlatıyoruz
+    return this.productsService.findAll(search, category, campus);
   }
 
   @Get('user/:userId')
