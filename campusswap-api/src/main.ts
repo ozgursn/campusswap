@@ -11,6 +11,6 @@ async function bootstrap() {
   // Yüklenen resimlerin internetten erişilebilir olması için statik klasör tanımı
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(3000, '0.0.0.0');
 }
 bootstrap();
