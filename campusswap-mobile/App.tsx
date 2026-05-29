@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, StatusBar, SafeAreaView, TextInput, TouchableOpacity, Alert, ActivityIndicator, FlatList, Image, Dimensions, Platform, Modal, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, StatusBar, TextInput, TouchableOpacity, Alert, ActivityIndicator, FlatList, Image, Dimensions, Platform, Modal, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
@@ -72,14 +73,15 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
 
+  // 🔔 Canlı Bildirim Hafıza State'i (Kurallara Uygun Şekilde En Üst Gövdede)
+  const [lastUrgentId, setLastUrgentId] = useState<number | null>(null);
+
   // NGROK SABİT URL TANIMLAMASI
   const BASE_URL = 'https://litter-stew-sensitize.ngrok-free.dev';
 
   // GENEL İLANLARI GETİR
   const fetchProducts = (search: string = '') => {
-    // Eğer çek-bırak yapılmıyorsa ilk yükleme loading'ini göster
     if (!refreshing) setProductsLoading(true);
-    
     const url = `${BASE_URL}/products${search ? `?search=${encodeURIComponent(search)}` : ''}`;
     
     fetch(url)
@@ -100,11 +102,11 @@ export default function App() {
         });
         setProducts(formattedProducts);
         setProductsLoading(false);
-        setRefreshing(false); // 🔄 Yenileme tamamlandı, animasyonu kapat
+        setRefreshing(false); 
       })
       .catch((err) => {
         setProductsLoading(false);
-        setRefreshing(false); // 🚨 Hata durumunda da animasyonu kapat
+        setRefreshing(false); 
         console.error(err);
       });
   };
@@ -139,11 +141,71 @@ export default function App() {
       });
   };
 
+  // Sekme Takip Eden Birinci Effect
   useEffect(() => {
     if (activeTab === 'Profile' && currentScreen === 'Main') {
       fetchUserProducts();
     }
   }, [activeTab]);
+
+// 🚨 SİLME KORUMALI VE GÜVENLİ CANLI BİLDİRİM MOTORU
+useEffect(() => {
+  if (currentScreen !== 'Main') return;
+
+  // İlk açılış kontrolü
+  fetch(`${BASE_URL}/products?t=${Date.now()}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (!data || !Array.isArray(data) || data.length === 0) return; // 🛡️ Boş veri koruması
+      const initialUrgent = data.find((p: Product) => p && (p.isUrgent === true || String(p.isUrgent) === 'true' || Number(p.isUrgent) === 1));
+      if (initialUrgent && lastUrgentId === null) {
+        setLastUrgentId(initialUrgent.id);
+      }
+    })
+    .catch((err) => console.log('Sessiz veri kontrolü'));
+
+  const interval = setInterval(() => {
+    fetch(`${BASE_URL}/products?t=${Date.now()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        // 🛡️ KRİTİK KORUMA: Eğer ilan silindiyse veya veri henüz yüklenmediyse kodu burada durdur, çökme!
+        if (!data || !Array.isArray(data) || data.length === 0) return;
+        
+        const latestProduct = data[0]; // Listenin en başındaki eleman
+        
+        // 🛡️ NESNE VARLIK KONTROLÜ: latestProduct nesnesi gerçekten var mı diye bakıyoruz (Silindiğinde hata vermez)
+        if (
+          latestProduct && 
+          latestProduct.id !== undefined &&
+          (latestProduct.isUrgent === true || String(latestProduct.isUrgent) === 'true') && 
+          latestProduct.id !== lastUrgentId
+        ) {
+          setLastUrgentId(latestProduct.id);
+
+          Alert.alert(
+            "🚨 KAMPÜSTE ACİL İLAN!",
+            `"${latestProduct.title}" az önce acil satılık durumuna alındı! Fiyat: ${latestProduct.price} TL. Kaçırmadan incele!`,
+            [
+              { 
+                text: "Hemen İncele 🔍", 
+                onPress: () => { 
+                  setActiveTab('Feed'); 
+                  fetchProducts(); 
+                } 
+              },
+              { text: "Kapat", style: "cancel" }
+            ],
+            { cancelable: true }
+          );
+        }
+      })
+      .catch((err) => {
+        // Ağ kopsa veya silme anında senkronizasyon şaşsa bile sessizce atlat, uygulamayı kilitleme!
+      });
+  }, 3000); 
+
+  return () => clearInterval(interval);
+}, [currentScreen, lastUrgentId]);
 
   const handleAuthSubmit = () => {
     if (!email || !password || (isRegister && !name)) {
@@ -192,7 +254,9 @@ export default function App() {
         .then((data) => {
           setAuthLoading(false);
           setUserToken(data.access_token);
-          setCurrentUser(data.user || { id: 1, name: 'Öğrenci', email: email.trim() });
+          
+          const loggedInUser = data.user || { id: 1, name: 'Öğrenci', email: email.trim() };
+          setCurrentUser(loggedInUser);
           setCurrentScreen('Main'); 
           fetchProducts();
         })
@@ -203,7 +267,7 @@ export default function App() {
     }
   };
 
-  const pickImage = async () => {
+const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       Alert.alert("İzin Gerekli", "Fotoğraf ekleyebilmek için galeri izni vermeniz gerekir.");
@@ -211,7 +275,8 @@ export default function App() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      // ⚡ DEPRECATED UYARISINI SİLEN YENİ NESİL KOD:
+      mediaTypes: ['images'], // Eski MediaTypeOptions.Images yerine direkt bunu yazdık ✨
       allowsEditing: false, 
       quality: 0.8, 
     });
@@ -447,7 +512,7 @@ export default function App() {
 
           <View style={styles.contentArea}>
             {activeTab === 'Feed' ? (
-              productsLoading && !refreshing ? ( // 🔄 Çek-bırak yapılıyorsa tam ekran loading basıp ekranı beyazlatmasın
+              productsLoading && !refreshing ? ( 
                 <View style={styles.loadingCenter}><ActivityIndicator size="large" color="#1B4332" /></View>
               ) : (
                 <FlatList 
@@ -458,8 +523,6 @@ export default function App() {
                   columnWrapperStyle={styles.row} 
                   contentContainerStyle={styles.listContainer} 
                   ListEmptyComponent={<Text style={styles.emptyText}>Aradığınız kriterde ilan bulunamadı.</Text>}
-                  
-                  // 🔄 PULL TO REFRESH PROPLARI BURAYA BAĞLANDI
                   refreshing={refreshing}
                   onRefresh={() => {
                     setRefreshing(true);
@@ -652,7 +715,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#ffffff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, paddingBottom: Platform.OS === 'android' ? 8 : 0 },
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
   loginWrapper: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#F8FAFC' },
   loginCard: { backgroundColor: '#fff', padding: 28, borderRadius: 24, shadowColor: '#0F172A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.08, shadowRadius: 30, elevation: 5, borderColor: '#F1F5F9', borderWidth: 1 },
   webTabsHeader: { flexDirection: 'row', gap: 16, marginBottom: 24, borderBottomWidth: 2, borderColor: '#F1F5F9', paddingBottom: 12 },

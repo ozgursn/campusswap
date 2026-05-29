@@ -50,4 +50,15 @@ export class UsersService {
       user: { id: user.id, name: user.name, email: user.email }
     };
   }
+
+  // 🔔 3. ADIM: PUSH TOKEN GÜNCELLEME METODU
+  async updatePushToken(userId: number, pushToken: string): Promise<{ success: boolean; message: string }> {
+    // Kullanıcıyı id'sine göre bulup, cihazından gelen pushToken'ı veritabanına işliyoruz
+    await this.usersRepository.update(userId, { pushToken });
+    
+    return {
+      success: true,
+      message: 'Cihaz bildirim tokenı başarıyla veritabanına kaydedildi.',
+    };
+  }
 }

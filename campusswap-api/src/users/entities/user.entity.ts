@@ -16,4 +16,8 @@ export class User {
 
   @CreateDateColumn()
   createdAt!: Date;
+  
+  @Column({ nullable: true })
+  pushToken!: string;
+
 }

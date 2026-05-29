@@ -1,17 +1,21 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'; 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm'; 
+import { Repository, Like, Not, IsNull, EntityManager } from 'typeorm'; 
 import { Product } from './entities/product.entity';
+import { User } from '../users/entities/user.entity'; 
+import { Expo } from 'expo-server-sdk'; 
 import * as admin from 'firebase-admin';
 import { join } from 'path';
 
-
-
 @Injectable()
 export class ProductsService {
+  private expo = new Expo();
+
   constructor(
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
+
+    private entityManager: EntityManager,
   ) {}
 
   // İlan oluşturma
@@ -20,50 +24,64 @@ export class ProductsService {
     return this.productsRepository.save(newProduct);
   }
 
-findAll(search?: string, category?: string, campus?: string) {
-  const findOptions: any = {
-    order: { 
-      isUrgent: 'DESC',    // ⚡ Önce acil satılıklar
-      isPremium: 'DESC',   // 🌟 Sonra premium olanlar
-      createdAt: 'DESC'    // 📅 Sonra en yeniler
-    },
-    relations: {
-      user: true // Satıcı ilişkisi
+  // ⚡ Kurşun geçirmez sıralama için fonksiyon async yapıldı
+  async findAll(search?: string, category?: string, campus?: string) {
+    const findOptions: any = {
+      // Temel sıralama olarak veritabanından en yenileri çekiyoruz
+      order: { 
+        createdAt: 'DESC'
+      },
+      relations: {
+        user: true 
+      }
+    };
+
+    const where: any = {};
+
+    if (search && search !== 'undefined' && search !== 'null' && search.trim() !== '') {
+      where.title = Like(`%${search}%`);
     }
-  };
 
-  const where: any = {};
+    if (category && category !== 'Hepsi' && category !== 'undefined' && category !== 'null' && category.trim() !== '') {
+      where.category = category;
+    }
 
-  // 1. ARAMA FİLTRESİ SIKI KONTROL
-  // Frontend yanlışlıkla string olarak "undefined" veya "null" yollarsa bunu filtreye ekleme
-  if (search && search !== 'undefined' && search !== 'null' && search.trim() !== '') {
-    where.title = Like(`%${search}%`);
+    if (campus && campus !== 'Hepsi' && campus !== 'undefined' && campus !== 'null' && campus.trim() !== '') {
+      where.campus = campus;
+    }
+
+    if (Object.keys(where).length > 0) {
+      findOptions.where = where;
+    }
+
+    try {
+      // 1. Önce filtreye uyan tüm ürünleri veritabanından düz bir liste olarak çekiyoruz
+      const products = await this.productsRepository.find(findOptions);
+
+      // 2. 🚨 REAL-TIME BİLDİRİM GARANTİLİ JAVASCRIPT SIRALAMASI:
+      // SQL'in Premium/Acil gruplama kısıtlamalarını tamamen eziyoruz.
+      // Herhangi bir ürün acil satılık moduna geçtiği salisede listenin en tepesine (0. indekse) yerleşir!
+      return products.sort((a, b) => {
+        const aUrgent = a.isUrgent === true || String(a.isUrgent) === 'true' || Number(a.isUrgent) === 1;
+        const bUrgent = b.isUrgent === true || String(b.isUrgent) === 'true' || Number(b.isUrgent) === 1;
+
+        if (aUrgent && !bUrgent) return -1; // 'a' acil ise 'b'nin önüne geçsin
+        if (!aUrgent && bUrgent) return 1;  // 'b' acil ise 'a'nın önüne geçsin
+        
+        // Eğer ikisi de acilse veya ikisi de normal ilansa, en büyük ID'li (en yeni) üstte gelsin
+        return b.id - a.id;
+      });
+
+    } catch (error) {
+      console.error("Ana sayfa ilanları çekilirken SQL hatası oluştu:", error);
+      const fallbackProducts = await this.productsRepository.find({ order: { createdAt: 'DESC' }, relations: { user: true } });
+      return fallbackProducts.sort((a, b) => {
+        const aUrgent = a.isUrgent === true || String(a.isUrgent) === 'true';
+        const bUrgent = b.isUrgent === true || String(b.isUrgent) === 'true';
+        return (bUrgent ? 1 : 0) - (aUrgent ? 1 : 0);
+      });
+    }
   }
-
-  // 2. KATEGORİ FİLTRESİ SIKI KONTROL
-  if (category && category !== 'Hepsi' && category !== 'undefined' && category !== 'null' && category.trim() !== '') {
-    where.category = category;
-  }
-
-  // 3. KAMPÜS FİLTRESİ SIKI KONTROL
-  if (campus && campus !== 'Hepsi' && campus !== 'undefined' && campus !== 'null' && campus.trim() !== '') {
-    where.campus = campus;
-  }
-
-  // Eğer filtre objesinin içi boş değilse seçeneklere ekle
-  if (Object.keys(where).length > 0) {
-    findOptions.where = where;
-  }
-
-  // Herhangi bir filtreleme hatasında uygulamanın çöküp boş dönmesini engellemek için try-catch
-  try {
-    return this.productsRepository.find(findOptions);
-  } catch (error) {
-    console.error("Ana sayfa ilanları çekilirken SQL hatası oluştu:", error);
-    // En kötü senaryoda bile jüriye beyaz ekran veya boş sayfa göstermemek için filtresiz düz listeyi dön:
-    return this.productsRepository.find({ order: { createdAt: 'DESC' }, relations: { user: true } });
-  }
-}
 
   findOne(id: number) {
     return this.productsRepository.findOne({
@@ -74,7 +92,6 @@ findAll(search?: string, category?: string, campus?: string) {
     });
   }
 
-  // Belirli bir kullanıcının ilanlarını listeleme (Profil sayfası için)
   findByUser(userId: number) {
     return this.productsRepository.find({
       where: { userId },
@@ -82,7 +99,6 @@ findAll(search?: string, category?: string, campus?: string) {
     });
   }
 
-  // GÜVENLİ SİLME MOTORU
   async remove(id: number, userId: number) {
     const product = await this.productsRepository.findOneBy({ id });
 
@@ -105,9 +121,7 @@ findAll(search?: string, category?: string, campus?: string) {
     return this.productsRepository.save(product);
   }
 
-  // 💰 YENİ: ACİL SATILIK MODUNA ALMA VE BİLDİRİM TETİKLEME FONKSİYONU
   async makeUrgent(id: number) {
-    // 1. Ürünü satıcı ilişkisiyle birlikte bul
     const product = await this.productsRepository.findOne({ 
       where: { id }, 
       relations: { user: true } 
@@ -117,12 +131,10 @@ findAll(search?: string, category?: string, campus?: string) {
       throw new NotFoundException('İlan bulunamadı.');
     }
     
-    // 2. Acil durum bayrağını true yap ve veritabanına kaydet
     product.isUrgent = true;
     const updatedProduct = await this.productsRepository.save(product);
     
-    // 3. 🚨 Kampüse Anlık Bildirim Sinyali Tetikle
-    this.triggerCampusNotification(updatedProduct);
+    await this.triggerCampusNotification(updatedProduct);
     
     return { 
       success: true, 
@@ -131,14 +143,45 @@ findAll(search?: string, category?: string, campus?: string) {
     };
   }
 
-  // Jüri sunumunda terminal/log üstünden anlık event fırlatıldığını kanıtlayacak metot
-  private triggerCampusNotification(product: any) {
+  private async triggerCampusNotification(product: any) {
     console.log(`\n======================================================================`);
     console.log(`🚨 [CAMPUS PUSH NOTIFICATION] ⚡ ACİL İLAN ALARMI!`);
-    console.log(`👤 Satıcı: ${product.user?.username || 'Bir Öğrenci'}`);
+    console.log(` Satıcı: ${product.user?.name || 'Bir Öğrenci'}`);
     console.log(`📦 Ürün: ${product.title}`);
     console.log(`💰 Fiyat: ${product.price} ₺`);
     console.log(`📢 Durum: Kampüsteki tüm öğrencilere anlık bildirim fırlatıldı!`);
     console.log(`======================================================================\n`);
+
+    try {
+      const usersWithToken = await this.entityManager.getRepository(User).find({
+        where: { pushToken: Not(IsNull()) },
+      });
+
+      const messages: any[] = [];
+      for (const u of usersWithToken) {
+        if (!Expo.isExpoPushToken(u.pushToken)) {
+          continue;
+        }
+
+        messages.push({
+          to: u.pushToken,
+          sound: 'default',
+          title: '🚨 KAMPÜSTE ACİL İLAN!',
+          body: `"${product.title}" acil satılık durumuna alındı! Fiyat: ${product.price} TL. Kaçırmadan incele!`,
+          data: { productId: product.id },
+        });
+      }
+
+      if (messages.length > 0) {
+        const chunks = this.expo.chunkPushNotifications(messages);
+        for (const chunk of chunks) {
+          await this.expo.sendPushNotificationsAsync(chunk);
+        }
+        console.log(`🚀 [SUCCESS] Arka planda ${messages.length} aktif öğrenci cihazına sinyal başarıyla uçuruldu.`);
+      }
+
+    } catch (error) {
+      console.error('⚠️ Bildirim gönderim motoru arka planda hataya düştü:', error);
+    }
   }
 }
