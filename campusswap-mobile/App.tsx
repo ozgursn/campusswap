@@ -65,29 +65,46 @@ export default function App() {
   const [productsLoading, setProductsLoading] = useState<boolean>(false);
   const [userProductsLoading, setUserProductsLoading] = useState<boolean>(false);
 
+  // --- 🔄 PULL TO REFRESH STATE'İ ---
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
   // --- OTURUM STATELERİ ---
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
 
+  // NGROK SABİT URL TANIMLAMASI
+  const BASE_URL = 'https://litter-stew-sensitize.ngrok-free.dev';
+
   // GENEL İLANLARI GETİR
   const fetchProducts = (search: string = '') => {
-    setProductsLoading(true);
-    const url = `http://10.72.230.166:3000/products${search ? `?search=${encodeURIComponent(search)}` : ''}`;
+    // Eğer çek-bırak yapılmıyorsa ilk yükleme loading'ini göster
+    if (!refreshing) setProductsLoading(true);
+    
+    const url = `${BASE_URL}/products${search ? `?search=${encodeURIComponent(search)}` : ''}`;
     
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
         const formattedProducts = data.map((product: Product) => {
-          if (product.imageUrl && product.imageUrl.includes('localhost')) {
-            return { ...product, imageUrl: product.imageUrl.replace('localhost', '10.72.230.166') };
+          if (product.imageUrl) {
+            if (!product.imageUrl.startsWith('http')) {
+              return { ...product, imageUrl: `${BASE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}` };
+            }
+            if (product.imageUrl.includes('localhost') || product.imageUrl.includes('10.72.')) {
+              const s_part = product.imageUrl.split(':3000');
+              const path = s_part[1] || s_part[0].split('/uploads')[1];
+              return { ...product, imageUrl: `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}` };
+            }
           }
           return product;
         });
         setProducts(formattedProducts);
         setProductsLoading(false);
+        setRefreshing(false); // 🔄 Yenileme tamamlandı, animasyonu kapat
       })
       .catch((err) => {
         setProductsLoading(false);
+        setRefreshing(false); // 🚨 Hata durumunda da animasyonu kapat
         console.error(err);
       });
   };
@@ -97,12 +114,19 @@ export default function App() {
     if (!currentUser) return;
     setUserProductsLoading(true);
     
-    fetch(`http://10.72.230.166:3000/products/user/${currentUser.id}`)
+    fetch(`${BASE_URL}/products/user/${currentUser.id}`)
       .then((res) => res.json())
       .then((data) => {
         const formatted = data.map((product: Product) => {
-          if (product.imageUrl && product.imageUrl.includes('localhost')) {
-            return { ...product, imageUrl: product.imageUrl.replace('localhost', '10.72.230.166') };
+          if (product.imageUrl) {
+            if (!product.imageUrl.startsWith('http')) {
+              return { ...product, imageUrl: `${BASE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}` };
+            }
+            if (product.imageUrl.includes('localhost') || product.imageUrl.includes('10.72.')) {
+              const s_part = product.imageUrl.split(':3000');
+              const path = s_part[1] || s_part[0].split('/uploads')[1];
+              return { ...product, imageUrl: `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}` };
+            }
           }
           return product;
         });
@@ -134,7 +158,7 @@ export default function App() {
     setAuthLoading(true);
 
     if (isRegister) {
-      fetch('http://10.72.230.166:3000/users/register', {
+      fetch(`${BASE_URL}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), password }),
@@ -155,7 +179,7 @@ export default function App() {
           Alert.alert('Kayıt Hatası', err.message);
         });
     } else {
-      fetch('http://10.72.230.166:3000/users/login', {
+      fetch(`${BASE_URL}/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
@@ -222,7 +246,7 @@ export default function App() {
       } as any);
     }
 
-    fetch('http://10.72.230.166:3000/products', {
+    fetch(`${BASE_URL}/products`, {
       method: 'POST',
       headers: { 'Content-Type': 'multipart/form-data' },
       body: formData,
@@ -246,7 +270,6 @@ export default function App() {
       });
   };
 
-  // 💳 SEMBOLİK PREMIUM ÖDEME TETİKLEYİCİSİ
   const handlePaymentSubmit = () => {
     if (!cardNumber || !cardExpiry || !cardCvv) {
       Alert.alert("Hata", "Lütfen sembolik kart bilgilerini eksiksiz doldurun.");
@@ -255,7 +278,7 @@ export default function App() {
 
     setAuthLoading(true);
     const path = upgradeType === 'urgent' ? 'make-urgent' : 'premium';
-    const url = `http://10.72.230.166:3000/products/${selectedProduct?.id}/${path}`;
+    const url = `${BASE_URL}/products/${selectedProduct?.id}/${path}`;
 
     fetch(url, {
       method: 'PATCH',
@@ -279,7 +302,6 @@ export default function App() {
       });
   };
 
-  // 🗑️ NESTJS DELETE /PRODUCTS/:ID ENTEGRASYONU (İlan Silme - setLoading Hatası Çözüldü)
   const handleDeleteProduct = (productId: number) => {
     Alert.alert(
       "İlanı Sil",
@@ -290,8 +312,8 @@ export default function App() {
           text: "Evet, Sil",
           style: "destructive",
           onPress: () => {
-            setUserProductsLoading(true); // 🧙‍♂️ Dünyanın en temiz state düzeltmesi
-            fetch(`http://10.72.230.166:3000/products/${productId}`, {
+            setUserProductsLoading(true);
+            fetch(`${BASE_URL}/products/${productId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: currentUser?.id || 1 })
@@ -425,13 +447,27 @@ export default function App() {
 
           <View style={styles.contentArea}>
             {activeTab === 'Feed' ? (
-              productsLoading ? (
+              productsLoading && !refreshing ? ( // 🔄 Çek-bırak yapılıyorsa tam ekran loading basıp ekranı beyazlatmasın
                 <View style={styles.loadingCenter}><ActivityIndicator size="large" color="#1B4332" /></View>
               ) : (
-                <FlatList data={products} keyExtractor={(item) => item.id.toString()} renderItem={renderProductItem} numColumns={2} columnWrapperStyle={styles.row} contentContainerStyle={styles.listContainer} ListEmptyComponent={<Text style={styles.emptyText}>Aradığınız kriterde ilan bulunamadı.</Text>} />
+                <FlatList 
+                  data={products} 
+                  keyExtractor={(item) => item.id.toString()} 
+                  renderItem={renderProductItem} 
+                  numColumns={2} 
+                  columnWrapperStyle={styles.row} 
+                  contentContainerStyle={styles.listContainer} 
+                  ListEmptyComponent={<Text style={styles.emptyText}>Aradığınız kriterde ilan bulunamadı.</Text>}
+                  
+                  // 🔄 PULL TO REFRESH PROPLARI BURAYA BAĞLANDI
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    setRefreshing(true);
+                    fetchProducts(searchQuery);
+                  }}
+                />
               )
             ) : (
-              // 👤 CANLI PROFİL PANELİ (SİLME VE PREMIUM ENTEGRASYONLU)
               <ScrollView contentContainerStyle={styles.profileWrapper}>
                 <View style={styles.profileCard}>
                   <View style={styles.avatarCircle}><Text style={styles.avatarText}>{currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}</Text></View>
@@ -464,7 +500,6 @@ export default function App() {
                           </View>
                         </View>
                         
-                        {/* 🛠️ AKSİYON KUTUSU (🗑️ SİLME BUTONU DAHİL EDİLDİ) */}
                         <View style={styles.userProductActionBox}>
                           <TouchableOpacity 
                             style={styles.actionDeleteBtn} 
@@ -589,7 +624,7 @@ export default function App() {
                   <Text style={styles.inputLabel}>Kart Numarası</Text>
                   <TextInput style={styles.input} placeholder="4444 5555 6666 7777" keyboardType="numeric" maxLength={16} value={cardNumber} onChangeText={setCardNumber} placeholderTextColor="#94A3B8" />
                 </View>
-                <div style={{ flexDirection: 'row', gap: 12, display: 'flex' }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={[styles.inputContainer, { flex: 1 }]}>
                     <Text style={styles.inputLabel}>Son Kul. (AA/YY)</Text>
                     <TextInput style={styles.input} placeholder="12/28" keyboardType="numeric" maxLength={5} value={cardExpiry} onChangeText={setCardExpiry} placeholderTextColor="#94A3B8" />
@@ -598,7 +633,7 @@ export default function App() {
                     <Text style={styles.inputLabel}>CVV</Text>
                     <TextInput style={styles.input} placeholder="123" keyboardType="numeric" secureTextEntry maxLength={3} value={cardCvv} onChangeText={setCardCvv} placeholderTextColor="#94A3B8" />
                   </View>
-                </div>
+                </View>
 
                 <TouchableOpacity style={[styles.button, { backgroundColor: '#10B981', marginTop: 12 }]} onPress={handlePaymentSubmit} disabled={authLoading}>
                   {authLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>🔒 19,90 TL Güvenli Ödeme Yap</Text>}
@@ -690,14 +725,12 @@ const styles = StyleSheet.create({
   miniBadgePremium: { backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   miniBadgeText: { fontSize: 10, fontWeight: '700', color: '#92400E' },
   
-  // Aksiyon Düğmeleri Kutusu
   userProductActionBox: { gap: 6, marginLeft: 8 },
   actionUrgentBtn: { backgroundColor: '#EF4444', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, alignItems: 'center' },
   actionPremiumBtn: { backgroundColor: '#F59E0B', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, alignItems: 'center' },
   actionBtnText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   maxedOutText: { fontSize: 11, fontWeight: '600', color: '#10B981', fontStyle: 'italic' },
   
-  // 🗑️ Yeni Eklenen Silme Buton Stilleri
   actionDeleteBtn: { backgroundColor: '#FEE2E2', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, alignItems: 'center', borderColor: '#FCA5A5', borderWidth: 1 },
   actionDeleteBtnText: { color: '#DC2626', fontSize: 11, fontWeight: '700' },
 
