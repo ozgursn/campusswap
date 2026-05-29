@@ -44,13 +44,15 @@ Proje, platformlar arası veri tutarlılığını maksimuma çıkarmak adına ö
 Projeyi yerel ortamınızda ayağa kaldırmak için aşağıdaki adımları sırasıyla uygulayabilirsiniz:
 
 ### 1. Backend (NestJS) Kurulumu
-Bash
+```Bash
 cd campusswap-api
 npm install
 npm run start:dev
 
+API katmanı varsayılan olarak http://localhost:3000 portunda ayağa kalkacaktır.
+
 ### 2. Web Frontend (React) Kurulumu
-Bash
+```Bash
 cd campusswap-frontend
 npm install
 npm run dev
@@ -58,7 +60,7 @@ npm run dev
 Web arayüzüne http://localhost:5173 adresinden erişebilirsiniz.
 
 ### 3. Mobil Uygulama (Expo) Kurulumu
-Bash
+```Bash
 cd campusswap-mobile
 npm install
 npx expo start
