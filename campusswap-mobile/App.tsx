@@ -671,42 +671,54 @@ const pickImage = async () => {
             </View>
           </Modal>
 
-          {/* MODAL: SEMBOLİK KREDİ KARTI ÖDEME EKRANI */}
-          <Modal visible={isPaymentModalVisible} animationType="fade" transparent={true}>
-            <View style={styles.paymentModalOverlay}>
-              <View style={styles.paymentCard}>
-                <Text style={styles.paymentTitle}>💳 Kampüs Ödeme Geçidi</Text>
-                <Text style={styles.paymentSubText}>"{selectedProduct?.title}" ilanını {upgradeType === 'urgent' ? '🚨 ACİL' : '⭐ ÖNE ÇIKAN'} yapmak için sembolik panel.</Text>
-                <Text style={styles.paymentPriceTag}>Tutar: 19,90 TL</Text>
+{/* MODAL: SEMBOLİK KREDİ KARTI ÖDEME EKRANI */}
+<Modal visible={isPaymentModalVisible} animationType="fade" transparent={true}>
+  <View style={styles.paymentModalOverlay}>
+    <View style={styles.paymentCard}>
+      <Text style={styles.paymentTitle}>💳 Kampüs Ödeme Geçidi</Text>
+      <Text style={styles.paymentSubText}>"{selectedProduct?.title}" ilanını {upgradeType === 'urgent' ? '🚨 ACİL' : '⭐ ÖNE ÇIKAN'} yapmak için sembolik panel.</Text>
+      
+      {/* ✨ Tutar işlem tipine göre dinamik ayrıldı */}
+      <Text style={styles.paymentPriceTag}>
+        Tutar: {upgradeType === 'urgent' ? '29,90 TL' : '19,90 TL'}
+      </Text>
 
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Kart Üzerindeki İsim</Text>
-                  <TextInput style={styles.input} placeholder="Örn: Ali Yılmaz" placeholderTextColor="#94A3B8" />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Kart Numarası</Text>
-                  <TextInput style={styles.input} placeholder="4444 5555 6666 7777" keyboardType="numeric" maxLength={16} value={cardNumber} onChangeText={setCardNumber} placeholderTextColor="#94A3B8" />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={[styles.inputContainer, { flex: 1 }]}>
-                    <Text style={styles.inputLabel}>Son Kul. (AA/YY)</Text>
-                    <TextInput style={styles.input} placeholder="12/28" keyboardType="numeric" maxLength={5} value={cardExpiry} onChangeText={setCardExpiry} placeholderTextColor="#94A3B8" />
-                  </View>
-                  <View style={[styles.inputContainer, { flex: 1 }]}>
-                    <Text style={styles.inputLabel}>CVV</Text>
-                    <TextInput style={styles.input} placeholder="123" keyboardType="numeric" secureTextEntry maxLength={3} value={cardCvv} onChangeText={setCardCvv} placeholderTextColor="#94A3B8" />
-                  </View>
-                </View>
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Kart Üzerindeki İsim</Text>
+        <TextInput style={styles.input} placeholder="Örn: Ali Yılmaz" placeholderTextColor="#94A3B8" />
+      </View>
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Kart Numarası</Text>
+        <TextInput style={styles.input} placeholder="4444 5555 6666 7777" keyboardType="numeric" maxLength={16} value={cardNumber} onChangeText={setCardNumber} placeholderTextColor="#94A3B8" />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={[styles.inputContainer, { flex: 1 }]}>
+          <Text style={styles.inputLabel}>Son Kul. (AA/YY)</Text>
+          <TextInput style={styles.input} placeholder="12/28" keyboardType="numeric" maxLength={5} value={cardExpiry} onChangeText={setCardExpiry} placeholderTextColor="#94A3B8" />
+        </View>
+        <View style={[styles.inputContainer, { flex: 1 }]}>
+          <Text style={styles.inputLabel}>CVV</Text>
+          <TextInput style={styles.input} placeholder="123" keyboardType="numeric" secureTextEntry maxLength={3} value={cardCvv} onChangeText={setCardCvv} placeholderTextColor="#94A3B8" />
+        </View>
+      </View>
 
-                <TouchableOpacity style={[styles.button, { backgroundColor: '#10B981', marginTop: 12 }]} onPress={handlePaymentSubmit} disabled={authLoading}>
-                  {authLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>🔒 19,90 TL Güvenli Ödeme Yap</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelPaymentBtn} onPress={() => { setPaymentModalVisible(false); setCardNumber(''); setCardExpiry(''); setCardCvv(''); }}>
-                  <Text style={styles.cancelPaymentBtnText}>İptal Et</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
+      <TouchableOpacity style={[styles.button, { backgroundColor: '#10B981', marginTop: 12 }]} onPress={handlePaymentSubmit} disabled={authLoading}>
+        {authLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          /* ✨ Buton metni de işlem tipine göre dinamik olarak güncelleniyor */
+          <Text style={styles.buttonText}>
+            🔒 {upgradeType === 'urgent' ? '29,90 TL' : '19,90 TL'} Güvenli Ödeme Yap
+          </Text>
+        )}
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.cancelPaymentBtn} onPress={() => { setPaymentModalVisible(false); setCardNumber(''); setCardExpiry(''); setCardCvv(''); }}>
+        <Text style={styles.cancelPaymentBtnText}>İptal Et</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 
         </View>
       )}

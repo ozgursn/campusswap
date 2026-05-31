@@ -36,4 +36,5 @@ export class Product {
   
   @Column({ default: false })
   isUrgent!: boolean;
+  
 }

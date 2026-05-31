@@ -193,17 +193,31 @@ const Profile = () => {
             </div>
             <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1.5rem' }}>
               {checkoutType === 'urgent' ? 'İlanınızın push bildirimiyle fırlatılması için sembolik doping ücreti: ' : 'İlanınızın en üst sırada listelenmesi için sembolik doping ücreti: '}
-              <strong>{checkoutType === 'urgent' ? '19.90 TL' : '29.90 TL'}</strong>
+              <strong>{checkoutType === 'urgent' ? '29.90 TL' : '19.90 TL'}</strong>
             </p>
             <form onSubmit={handleCompletePayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input type="text" required placeholder="Kart Üzerindeki İsim" style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} />
               <input type="text" required placeholder="Kart Numarası" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} />
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <input type="text" required placeholder="MM/YY" value={expiry} onChange={(e) => setExpiry(e.target.value)} style={{ flex: 1, padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} />
-                <input type="password" required placeholder="CVV" value={cvv} onChange={(e) => setCvv(e.target.value)} style={{ flex: 1, padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} />
-              </div>
+              {/* 💳 Genişliği Sabitlenen ve Kibarlaştırılan SKT/CVV Alanı */}
+<div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '220px' }}>
+  <input 
+    type="text" 
+    required 
+    placeholder="MM/YY" 
+    value={expiry} 
+    onChange={(e) => setExpiry(e.target.value)} 
+    style={{ flex: 1, minWidth: 0, padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} 
+  />
+  <input 
+    type="text" 
+    required 
+    maxLength="3" 
+    placeholder="CVV" 
+    style={{ flex: 1, minWidth: 0, padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem' }} 
+  />
+</div>
               <button type="submit" disabled={paymentLoading} style={{ background: '#2D6A4F', color: 'white', border: 'none', padding: '0.8rem', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                {paymentLoading ? '🔒 Güvenli Ödeme Yapılıyor...' : `💳 ${checkoutType === 'urgent' ? '19.90' : '29.90'} TL Öde`}
+                {paymentLoading ? '🔒 Güvenli Ödeme Yapılıyor...' : `💳 ${checkoutType === 'urgent' ? '29.90' : '19.90'} TL Öde`}
               </button>
             </form>
           </div>
